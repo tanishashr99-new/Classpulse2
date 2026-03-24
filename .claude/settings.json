@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -E \"\\\\.\\(tsx?|jsx?\\)$\")",
+      "Bash(cd /c/Users/ahaly/Desktop/\"Class pulse part 2\")"
+    ]
+  }
+}
