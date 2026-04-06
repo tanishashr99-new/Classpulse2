@@ -62,7 +62,7 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     try {
       const options: any = {
-        redirectTo: `https://classpulse2-two.vercel.app/${role}`,
+        redirectTo: `https://classpulse2-two.vercel.app/auth/callback`,
       };
 
       if (role === "student") {
