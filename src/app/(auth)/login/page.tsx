@@ -62,7 +62,7 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     try {
       const options: any = {
-        redirectTo: `${window.location.origin}/${role}`,
+        redirectTo: `https://classpulse2-two.vercel.app/${role}`,
       };
 
       if (role === "student") {
