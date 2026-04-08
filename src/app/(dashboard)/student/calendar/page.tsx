@@ -35,20 +35,32 @@ export default function AttendanceCalendar() {
             return;
           }
 
+          // 3. Fetch all possible subjects from teachers table
+          const { data: teacherData } = await supabase
+            .from("teachers")
+            .select("subject");
+          
+          const allSubjects = Array.from(new Set((teacherData || []).map(t => t.subject).filter(Boolean)));
+
+          // 4. Fetch all attendance records for this student
           const { data: attendanceDocs } = await supabase
             .from("attendance_records")
             .select("date, status, subject")
             .eq("student_id", student.id);
 
-          if (!attendanceDocs || attendanceDocs.length === 0) {
+          if (!attendanceDocs) {
             setLoading(false);
             return;
           }
 
           // Group by date for calendar markers
           const groupedByDate: Record<string, { present: number; absent: number }> = {};
-          // Group by subject for the list below
+          
+          // Initialize subject stats with all subjects from the system
           const groupedBySubject: Record<string, { present: number; total: number }> = {};
+          allSubjects.forEach(sub => {
+            groupedBySubject[sub] = { present: 0, total: 0 };
+          });
 
           attendanceDocs.forEach((rec) => {
             // Calendar processing
@@ -58,10 +70,13 @@ export default function AttendanceCalendar() {
             else groupedByDate[dateKey].absent++;
 
             // Subject processing
-            const sub = rec.subject || "Unknown Subject";
-            if (!groupedBySubject[sub]) groupedBySubject[sub] = { present: 0, total: 0 };
-            groupedBySubject[sub].total++;
-            if (rec.status?.toLowerCase() === "present") groupedBySubject[sub].present++;
+            const sub = rec.subject;
+            if (sub) {
+              // Ensure subject exists in our map (in case it's not in teachers table for some reason)
+              if (!groupedBySubject[sub]) groupedBySubject[sub] = { present: 0, total: 0 };
+              groupedBySubject[sub].total++;
+              if (rec.status?.toLowerCase() === "present") groupedBySubject[sub].present++;
+            }
           });
 
           // Process records for calendar state
@@ -81,7 +96,7 @@ export default function AttendanceCalendar() {
           Object.entries(groupedBySubject).forEach(([sub, data]) => {
             finalSubjectStats[sub] = {
               ...data,
-              percentage: Math.round((data.present / data.total) * 100)
+              percentage: data.total > 0 ? Math.round((data.present / data.total) * 100) : 0
             };
           });
 
