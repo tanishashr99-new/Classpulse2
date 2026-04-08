@@ -16,7 +16,6 @@ export default function AttendanceCalendar() {
   const [loading, setLoading] = useState(true);
   const [records, setRecords] = useState<Record<string, DayStatus>>({});
   const [stats, setStats] = useState({ present: 0, absent: 0, percentage: 0 });
-  const [debugMsg, setDebugMsg] = useState("");
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -31,7 +30,7 @@ export default function AttendanceCalendar() {
             .single();
 
           if (!student) {
-            setDebugMsg("Student not found for: " + user.email);
+
             setLoading(false);
             return;
           }
@@ -42,12 +41,12 @@ export default function AttendanceCalendar() {
             .eq("student_id", student.id);
 
           if (!attendanceDocs || attendanceDocs.length === 0) {
-            setDebugMsg("No attendance records found");
+
             setLoading(false);
             return;
           }
 
-          setDebugMsg("Records: " + attendanceDocs.length);
+
 
           const grouped: Record<string, { present: number; absent: number }> = {};
           attendanceDocs.forEach((rec) => {
@@ -78,7 +77,7 @@ export default function AttendanceCalendar() {
           });
           setLoading(false);
         } else {
-          setDebugMsg("No session");
+
           setLoading(false);
         }
       }
@@ -104,7 +103,7 @@ export default function AttendanceCalendar() {
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-bold tracking-tight">Attendance Calendar</h1>
         <p className="text-muted-foreground">Track your monthly attendance status and statistics.</p>
-        {debugMsg && <p className="text-xs text-yellow-500 bg-yellow-500/10 px-3 py-1 rounded-lg">{debugMsg}</p>}
+
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
