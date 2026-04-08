@@ -320,17 +320,17 @@ function DashboardContent() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="hover:shadow-lg transition-all border-border/50 bg-background/50 backdrop-blur-sm">
+        <Card className="hover:shadow-lg transition-all border-border/50 bg-background/50 backdrop-blur-sm cursor-pointer" onClick={() => handleTabChange('timetable')}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Courses Enrolled</CardTitle>
             <BookOpen className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{teachers.length > 0 ? teachers.length : 5}</div>
+            <div className="text-3xl font-bold">{teachers.length > 0 ? [...new Set(teachers.map(t => t.subject))].length : 5}</div>
             <p className="text-xs text-muted-foreground mt-1">Based on assigned Faculty</p>
           </CardContent>
         </Card>
-        <Card className="hover:shadow-lg transition-all border-border/50 bg-background/50 backdrop-blur-sm">
+        <Card className="hover:shadow-lg transition-all border-border/50 bg-background/50 backdrop-blur-sm cursor-pointer" onClick={() => handleTabChange('attendance')}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Overall Attendance</CardTitle>
             <UserCheck className="h-4 w-4 text-green-500" />
@@ -340,7 +340,7 @@ function DashboardContent() {
             <p className="text-xs text-muted-foreground mt-1">Acceptable limit: 75%</p>
           </CardContent>
         </Card>
-        <Card className="hover:shadow-lg transition-all border-border/50 bg-background/50 backdrop-blur-sm">
+        <Card className="hover:shadow-lg transition-all border-border/50 bg-background/50 backdrop-blur-sm cursor-pointer" onClick={() => handleTabChange('assignments')}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pending Tasks</CardTitle>
             <Clock className="h-4 w-4 text-yellow-500" />
@@ -350,7 +350,7 @@ function DashboardContent() {
             <p className="text-xs text-muted-foreground mt-1">Active sync</p>
           </CardContent>
         </Card>
-        <Card className="hover:shadow-lg transition-all border-border/50 bg-background/50 backdrop-blur-sm">
+        <Card className="hover:shadow-lg transition-all border-border/50 bg-background/50 backdrop-blur-sm cursor-pointer" onClick={() => handleTabChange('progress')}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Current CGPA</CardTitle>
             <Award className="h-4 w-4 text-blue-500" />
@@ -363,6 +363,17 @@ function DashboardContent() {
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+        <TabsList className="flex flex-wrap gap-1 mb-6 h-auto bg-muted/30 p-1 rounded-xl">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="timetable">Timetable</TabsTrigger>
+          <TabsTrigger value="attendance">Attendance</TabsTrigger>
+          <TabsTrigger value="assignments">Assignments</TabsTrigger>
+          <TabsTrigger value="materials">Materials</TabsTrigger>
+          <TabsTrigger value="meets">Proctor Meets</TabsTrigger>
+          <TabsTrigger value="progress">Progress</TabsTrigger>
+          <TabsTrigger value="roadmap">Roadmap</TabsTrigger>
+          <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
+        </TabsList>
         <TabsContent value="overview" className="space-y-6">
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
             <Card className="lg:col-span-4 border-border/50 bg-background/50 backdrop-blur-md shadow-sm">
