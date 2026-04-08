@@ -16,6 +16,7 @@ export default function AttendanceCalendar() {
   const [loading, setLoading] = useState(true);
   const [records, setRecords] = useState<Record<string, DayStatus>>({});
   const [stats, setStats] = useState({ present: 0, absent: 0, percentage: 0 });
+  const [subjectStats, setSubjectStats] = useState<Record<string, { present: number; total: number; percentage: number }>>({});
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -30,44 +31,62 @@ export default function AttendanceCalendar() {
             .single();
 
           if (!student) {
-
             setLoading(false);
             return;
           }
 
           const { data: attendanceDocs } = await supabase
             .from("attendance_records")
-            .select("date, status")
+            .select("date, status, subject")
             .eq("student_id", student.id);
 
           if (!attendanceDocs || attendanceDocs.length === 0) {
-
             setLoading(false);
             return;
           }
 
+          // Group by date for calendar markers
+          const groupedByDate: Record<string, { present: number; absent: number }> = {};
+          // Group by subject for the list below
+          const groupedBySubject: Record<string, { present: number; total: number }> = {};
 
-
-          const grouped: Record<string, { present: number; absent: number }> = {};
           attendanceDocs.forEach((rec) => {
+            // Calendar processing
             const dateKey = String(rec.date).split("T")[0];
-            if (!grouped[dateKey]) grouped[dateKey] = { present: 0, absent: 0 };
-            if (rec.status?.toLowerCase() === "present") grouped[dateKey].present++;
-            else grouped[dateKey].absent++;
+            if (!groupedByDate[dateKey]) groupedByDate[dateKey] = { present: 0, absent: 0 };
+            if (rec.status?.toLowerCase() === "present") groupedByDate[dateKey].present++;
+            else groupedByDate[dateKey].absent++;
+
+            // Subject processing
+            const sub = rec.subject || "Unknown Subject";
+            if (!groupedBySubject[sub]) groupedBySubject[sub] = { present: 0, total: 0 };
+            groupedBySubject[sub].total++;
+            if (rec.status?.toLowerCase() === "present") groupedBySubject[sub].present++;
           });
 
+          // Process records for calendar state
           const processedRecords: Record<string, DayStatus> = {};
           let totalPresent = 0;
           let totalAbsent = 0;
 
-          Object.entries(grouped).forEach(([date, counts]) => {
+          Object.entries(groupedByDate).forEach(([date, counts]) => {
             const finalStatus = counts.present >= counts.absent ? "present" : "absent";
             processedRecords[date] = finalStatus;
             if (finalStatus === "present") totalPresent++;
             else totalAbsent++;
           });
 
+          // Process subject stats
+          const finalSubjectStats: Record<string, { present: number; total: number; percentage: number }> = {};
+          Object.entries(groupedBySubject).forEach(([sub, data]) => {
+            finalSubjectStats[sub] = {
+              ...data,
+              percentage: Math.round((data.present / data.total) * 100)
+            };
+          });
+
           setRecords(processedRecords);
+          setSubjectStats(finalSubjectStats);
           setStats({
             present: totalPresent,
             absent: totalAbsent,
@@ -77,7 +96,6 @@ export default function AttendanceCalendar() {
           });
           setLoading(false);
         } else {
-
           setLoading(false);
         }
       }
@@ -98,12 +116,13 @@ export default function AttendanceCalendar() {
   for (let i = 0; i < firstDayOfMonth; i++) days.push(null);
   for (let i = 1; i <= daysInMonth; i++) days.push(i);
 
+  const hasLowAttendance = Object.values(subjectStats).some(s => s.percentage < 75);
+
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-12">
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-bold tracking-tight">Attendance Calendar</h1>
         <p className="text-muted-foreground">Track your monthly attendance status and statistics.</p>
-
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -200,6 +219,58 @@ export default function AttendanceCalendar() {
           <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
             <div className="w-3 h-3 rounded-full bg-muted-foreground/30" /> No Record
           </div>
+        </div>
+      </div>
+
+      {/* Subject-wise Attendance List */}
+      <div className="bg-card rounded-2xl border border-border/50 shadow-sm overflow-hidden">
+        <div className="p-6 border-b border-border/50 bg-muted/5">
+          <h2 className="text-xl font-bold">Subject-wise Attendance</h2>
+        </div>
+        <div className="p-6 space-y-6">
+          {Object.entries(subjectStats).length > 0 ? (
+            Object.entries(subjectStats).map(([subject, data]) => (
+              <div key={subject} className="space-y-2">
+                <div className="flex justify-between items-end">
+                  <div>
+                    <h3 className="font-semibold text-lg">{subject}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Presence: <span className="font-medium text-foreground">{data.present}</span> / {data.total} classes
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <span className={cn(
+                      "text-2xl font-bold",
+                      data.percentage >= 75 ? "text-emerald-600" : data.percentage >= 50 ? "text-amber-600" : "text-rose-600"
+                    )}>
+                      {data.percentage}%
+                    </span>
+                  </div>
+                </div>
+                <div className="h-3 w-full bg-muted rounded-full overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${data.percentage}%` }}
+                    className={cn(
+                      "h-full rounded-full transition-all",
+                      data.percentage >= 75 ? "bg-emerald-500" : data.percentage >= 50 ? "bg-amber-500" : "bg-rose-500"
+                    )}
+                  />
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="text-center text-muted-foreground py-8">No subject records available.</p>
+          )}
+
+          {hasLowAttendance && (
+            <div className="mt-8 p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl flex items-center gap-3 text-rose-700">
+              <CheckCircle2 className="h-5 w-5 rotate-180" />
+              <p className="text-sm font-medium">
+                Warning: Your attendance in one or more subjects is below the required 75%. Please attend more classes to avoid eligibility issues.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>
