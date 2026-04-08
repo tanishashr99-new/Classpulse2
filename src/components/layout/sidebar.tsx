@@ -18,7 +18,8 @@ import {
   LogOut,
   Video,
   Map,
-  Trophy
+  Trophy,
+  Calendar
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -62,6 +63,7 @@ function SidebarContent({ role }: SidebarProps) {
     { name: "Roadmap", href: "/student?tab=roadmap", match: "roadmap", icon: Map },
     { name: "Proctor Meets", href: "/student?tab=meets", match: "meets", icon: Video },
     { name: "Leaderboard", href: "/student?tab=leaderboard", match: "leaderboard", icon: Trophy },
+    { name: "Calendar", href: "/student/calendar", match: "calendar", icon: Calendar },
   ];
   
   const links = role === "teacher" ? teacherLinks : finalStudentLinks;
