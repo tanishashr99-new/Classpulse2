@@ -17,6 +17,14 @@ export default function AttendanceCalendar() {
   const [records, setRecords] = useState<Record<string, DayStatus>>({});
   const [stats, setStats] = useState({ present: 0, absent: 0, percentage: 0 });
   const [subjectStats, setSubjectStats] = useState<Record<string, { present: number; total: number; percentage: number }>>({});
+  const [allSubjects, setAllSubjects] = useState<string[]>([]);
+  const [dayWiseAttendance, setDayWiseAttendance] = useState<{
+    date: string;
+    formattedDate: string;
+    subjects: Record<string, "Present" | "Absent" | "No class">;
+    attended: number;
+    total: number;
+  }[]>([]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -51,16 +59,20 @@ export default function AttendanceCalendar() {
             return;
           }
 
-          const allSubjects = Array.from(new Set((teacherData || []).map(t => t.subject).filter(Boolean)));
+          const subjectsList = Array.from(new Set((teacherData || []).map(t => t.subject).filter(Boolean)));
+          setAllSubjects(subjectsList);
 
           // Group by date for calendar markers
           const groupedByDate: Record<string, { present: number; absent: number }> = {};
           
           // Initialize subject stats with all subjects from the system
           const groupedBySubject: Record<string, { present: number; total: number }> = {};
-          allSubjects.forEach(sub => {
+          subjectsList.forEach(sub => {
             groupedBySubject[sub] = { present: 0, total: 0 };
           });
+
+          // Day-wise processing map
+          const dailyMap: Record<string, Record<string, "Present" | "Absent" | "No class">> = {};
 
           attendanceDocs.forEach((rec) => {
             // Calendar processing
@@ -69,13 +81,19 @@ export default function AttendanceCalendar() {
             if (rec.status?.toLowerCase() === "present") groupedByDate[dateKey].present++;
             else groupedByDate[dateKey].absent++;
 
-            // Subject processing
+            // Subject processing (Master Statistics)
             const sub = rec.subject;
             if (sub) {
-              // Ensure subject exists in our map (in case it's not in teachers table for some reason)
               if (!groupedBySubject[sub]) groupedBySubject[sub] = { present: 0, total: 0 };
               groupedBySubject[sub].total++;
               if (rec.status?.toLowerCase() === "present") groupedBySubject[sub].present++;
+              
+              // Daily map processing
+              if (!dailyMap[dateKey]) {
+                dailyMap[dateKey] = {};
+                subjectsList.forEach(s => dailyMap[dateKey][s] = "No class");
+              }
+              dailyMap[dateKey][sub] = (rec.status?.toLowerCase() === "present" ? "Present" : "Absent");
             }
           });
 
@@ -100,8 +118,30 @@ export default function AttendanceCalendar() {
             };
           });
 
+          // Process day-wise attendance
+          const sortedDays = Object.entries(dailyMap).map(([date, subs]) => {
+            const d = new Date(date);
+            const formattedDate = d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) + " \u2014 " + d.toLocaleDateString('en-US', { weekday: 'long' });
+            
+            let attended = 0;
+            let scheduled = 0;
+            Object.values(subs).forEach(status => {
+                if (status !== "No class") scheduled++;
+                if (status === "Present") attended++;
+            });
+
+            return {
+                date,
+                formattedDate,
+                subjects: subs,
+                attended,
+                total: scheduled
+            };
+          }).sort((a,b) => b.date.localeCompare(a.date));
+
           setRecords(processedRecords);
           setSubjectStats(finalSubjectStats);
+          setDayWiseAttendance(sortedDays);
           setStats({
             present: totalPresent,
             absent: totalAbsent,
@@ -285,6 +325,61 @@ export default function AttendanceCalendar() {
                 Warning: Your attendance in one or more subjects is below the required 75%. Please attend more classes to avoid eligibility issues.
               </p>
             </div>
+          )}
+        </div>
+      </div>
+
+      {/* Day-wise Attendance Section */}
+      <div className="bg-card rounded-2xl border border-border/50 shadow-sm overflow-hidden">
+        <div className="p-6 border-b border-border/50 bg-muted/5 flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <CalendarIcon className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-bold text-foreground">Day-wise attendance</h2>
+          </div>
+          <p className="text-sm text-muted-foreground">All subjects per day</p>
+        </div>
+        
+        <div className="divide-y divide-border/50">
+          {dayWiseAttendance.length > 0 ? (
+            dayWiseAttendance.map((day) => (
+              <div key={day.date} className="p-6 space-y-4">
+                <h3 className="font-semibold text-lg text-foreground">{day.formattedDate}</h3>
+                
+                <div className="flex flex-wrap gap-4">
+                  {Object.entries(day.subjects).map(([subject, status]) => (
+                    <div 
+                      key={subject}
+                      className={cn(
+                        "min-w-[140px] flex-1 p-3 rounded-xl border-l-4 border shadow-sm transition-all",
+                        status === "Present" && "bg-emerald-500/5 border-emerald-500/20 border-l-[#639922]",
+                        status === "Absent" && "bg-rose-500/5 border-rose-500/20 border-l-[#E24B4A]",
+                        status === "No class" && "bg-muted/10 border-border/50 border-l-muted-foreground/30"
+                      )}
+                    >
+                      <h4 className="text-[13px] font-semibold text-foreground truncate mb-1">{subject}</h4>
+                      <p className="text-[12px] text-muted-foreground mb-2">
+                        {status === "No class" ? "0 / 0" : "1 / 1"} class
+                      </p>
+                      <span className={cn(
+                        "text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full inline-block",
+                        status === "Present" && "bg-emerald-500/10 text-emerald-700",
+                        status === "Absent" && "bg-rose-500/10 text-rose-700",
+                        status === "No class" && "bg-muted text-muted-foreground/70"
+                      )}>
+                        {status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-xl bg-muted/20 border border-border/50 mt-2">
+                  <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Total classes attended that day</span>
+                  <span className="text-lg font-bold text-foreground">{day.attended} / {day.total}</span>
+                </div>
+              </div>
+            ))
+          ) : (
+             <p className="text-center text-muted-foreground py-12">No daily attendance records have been registered yet.</p>
           )}
         </div>
       </div>
