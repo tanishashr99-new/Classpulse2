@@ -35,23 +35,23 @@ export default function AttendanceCalendar() {
             return;
           }
 
-          // 3. Fetch all possible subjects from teachers table
-          const { data: teacherData } = await supabase
-            .from("teachers")
-            .select("subject");
-          
-          const allSubjects = Array.from(new Set((teacherData || []).map(t => t.subject).filter(Boolean)));
+          // 3. Parallel fetch: All possible subjects from teachers + specific attendance records
+          const [teacherRes, attendanceRes] = await Promise.all([
+            supabase.from("teachers").select("subject"),
+            supabase.from("attendance_records")
+              .select("date, status, subject")
+              .eq("student_id", student.id)
+          ]);
 
-          // 4. Fetch all attendance records for this student
-          const { data: attendanceDocs } = await supabase
-            .from("attendance_records")
-            .select("date, status, subject")
-            .eq("student_id", student.id);
+          const teacherData = teacherRes.data;
+          const attendanceDocs = attendanceRes.data;
 
           if (!attendanceDocs) {
             setLoading(false);
             return;
           }
+
+          const allSubjects = Array.from(new Set((teacherData || []).map(t => t.subject).filter(Boolean)));
 
           // Group by date for calendar markers
           const groupedByDate: Record<string, { present: number; absent: number }> = {};
