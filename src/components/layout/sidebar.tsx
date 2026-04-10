@@ -19,9 +19,7 @@ import {
   Video,
   Map,
   Trophy,
-  Calendar,
-  ScanFace,
-  ShieldCheck
+  Calendar
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -66,8 +64,6 @@ function SidebarContent({ role }: SidebarProps) {
     { name: "Proctor Meets", href: "/student?tab=meets", match: "meets", icon: Video },
     { name: "Leaderboard", href: "/student?tab=leaderboard", match: "leaderboard", icon: Trophy },
     { name: "Calendar", href: "/student/calendar", match: "calendar", icon: Calendar },
-    { name: "Register Face", href: "/student/face-register", match: "face-register", icon: ScanFace },
-    { name: "Face Attendance", href: "/student/face-attendance", match: "face-attendance", icon: ShieldCheck },
   ];
   
   const links = role === "teacher" ? teacherLinks : finalStudentLinks;

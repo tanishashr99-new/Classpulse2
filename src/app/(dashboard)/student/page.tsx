@@ -46,12 +46,7 @@ function DashboardContent() {
   
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') || 'overview');
-
-  useEffect(() => {
-    const tab = searchParams.get('tab') || 'overview';
-    setActiveTab(tab);
-  }, [searchParams]);
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'overview');
   
   const handleTabChange = (value: string) => {
     setActiveTab(value);
