@@ -93,7 +93,7 @@ export default function FaceAttendancePage() {
           .select('*')
           .eq('is_active', true)
           .gt('expires_at', new Date().toISOString())
-          .order('created_at', { ascending: false })
+          .order('started_at', { ascending: false })
           .limit(1)
           .single();
 
