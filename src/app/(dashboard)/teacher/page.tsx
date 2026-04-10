@@ -2,10 +2,11 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
-import { Users, FileText, Upload, Plus, AlertCircle, Calendar, BookOpen, Activity, CheckSquare, Clock, Video, Link as LinkIcon, Trophy, Eye } from "lucide-react";
+import { Users, FileText, Upload, Plus, AlertCircle, Calendar, BookOpen, Activity, CheckSquare, Clock, Video, Link as LinkIcon, Trophy, Eye, UserCheck } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
