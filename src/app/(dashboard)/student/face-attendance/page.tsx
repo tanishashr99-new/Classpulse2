@@ -33,6 +33,7 @@ export default function FaceAttendancePage() {
   const [studentName, setStudentName] = useState("");
   const [studentDescriptor, setStudentDescriptor] = useState<number[] | null>(null);
   const [sessionSubject, setSessionSubject] = useState("");
+  const [cameraOpen, setCameraOpen] = useState(false);
   
   // Checks
   const [teacherStatus, setTeacherStatus] = useState<Status>("checking");
@@ -171,6 +172,7 @@ export default function FaceAttendancePage() {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        setCameraOpen(true);
       }
     } catch (error) {
       toast.error("Could not access camera");
@@ -340,7 +342,7 @@ export default function FaceAttendancePage() {
             </div>
 
             {studentDescriptor ? (
-              allChecksPassed && !videoRef.current?.srcObject && (
+              allChecksPassed && !cameraOpen && (
                 <Button 
                   size="lg" 
                   onClick={startCamera} 
@@ -359,7 +361,7 @@ export default function FaceAttendancePage() {
               </div>
             )}
 
-            {videoRef.current?.srcObject && !attendanceMarked && (
+            {cameraOpen && !attendanceMarked && (
                <Button 
                  size="lg" 
                  disabled={isScanning}
