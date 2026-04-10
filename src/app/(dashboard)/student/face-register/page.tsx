@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import * as faceapi from 'face-api.js';
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -11,6 +10,7 @@ import { Button } from "@/components/ui/button";
 
 export default function FaceRegisterPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const faceApiRef = useRef<any>(null);
   const [modelsLoaded, setModelsLoaded] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
   const [isRegistered, setIsRegistered] = useState(false);
@@ -19,6 +19,8 @@ export default function FaceRegisterPage() {
   useEffect(() => {
     const loadModels = async () => {
       try {
+        const faceapi = await import('face-api.js');
+        faceApiRef.current = faceapi;
         await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
         await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
         await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
@@ -53,13 +55,13 @@ export default function FaceRegisterPage() {
   }, []);
 
   const handleRegisterFace = async () => {
-    if (!videoRef.current || !modelsLoaded) return;
+    if (!videoRef.current || !modelsLoaded || !faceApiRef.current) return;
     
     setIsCapturing(true);
     try {
-      const detection = await faceapi.detectSingleFace(
+      const detection = await faceApiRef.current.detectSingleFace(
         videoRef.current, 
-        new faceapi.TinyFaceDetectorOptions()
+        new faceApiRef.current.TinyFaceDetectorOptions()
       ).withFaceLandmarks().withFaceDescriptor();
 
       if (!detection) {
