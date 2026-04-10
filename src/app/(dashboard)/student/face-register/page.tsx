@@ -73,10 +73,14 @@ export default function FaceRegisterPage() {
 
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        toast.error("Session not found. Please log in again.");
-        router.push("/login");
-        return;
+        const { data: refreshed } = await supabase.auth.refreshSession();
+        if (!refreshed.session) {
+          toast.error("Session not found. Please log in again.");
+          router.push("/login");
+          return;
+        }
       }
+      const currentSession = session || (await supabase.auth.getSession()).data.session;
 
       const descriptorArray = Array.from(detection.descriptor);
 
@@ -84,14 +88,14 @@ export default function FaceRegisterPage() {
       const { error: deleteError } = await supabase
         .from('face_descriptors')
         .delete()
-        .eq('student_id', session.user.id);
+        .eq('student_id', currentSession?.user?.id);
 
       if (deleteError) throw deleteError;
 
       const { error: insertError } = await supabase
         .from('face_descriptors')
         .insert({
-          student_id: session.user.id,
+          student_id: currentSession?.user?.id,
           descriptor: descriptorArray
         });
 
