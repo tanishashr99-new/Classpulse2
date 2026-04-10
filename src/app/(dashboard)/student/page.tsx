@@ -46,10 +46,11 @@ function DashboardContent() {
   
   const searchParams = useSearchParams();
   const router = useRouter();
-  const activeTab = searchParams.get('tab') || 'overview';
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'overview');
   
   const handleTabChange = (value: string) => {
-    router.push(`/student?tab=${value}`);
+    setActiveTab(value);
+    router.push(`/student?tab=${value}`, { scroll: false });
   };
 
   // Fetched data
