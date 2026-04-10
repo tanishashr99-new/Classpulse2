@@ -326,7 +326,7 @@ function DashboardContent() {
             <BookOpen className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{teachers.length > 0 ? [...new Set(teachers.map(t => t.subject))].length : 5}</div>
+            <div className="text-3xl font-bold">{teachers.length > 0 ? [...new Set(teachers.map((t: any) => t.subject))].length : 5}</div>
             <p className="text-xs text-muted-foreground mt-1">Based on assigned Faculty</p>
           </CardContent>
         </Card>
