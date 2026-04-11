@@ -2,10 +2,11 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
-import { Users, FileText, Upload, Plus, AlertCircle, Calendar, BookOpen, Activity, CheckSquare, Clock, Video, Link as LinkIcon, Trophy, Eye } from "lucide-react";
+import { Users, FileText, Upload, Plus, AlertCircle, Calendar, BookOpen, Activity, CheckSquare, Clock, Video, Link as LinkIcon, Trophy, Eye, UserCheck } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 const classPerformance = [
   { name: "Quiz 1", avg: 85 },
@@ -59,6 +60,9 @@ function TeacherDashboardContent() {
   const [studentModalOpen, setStudentModalOpen] = useState(false);
   const [studentDetails, setStudentDetails] = useState<any>(null);
   const [loadingStudentDetails, setLoadingStudentDetails] = useState(false);
+  const [faceAttendanceOpen, setFaceAttendanceOpen] = useState(false);
+  const [selectedSubject, setSelectedSubject] = useState("");
+  const [sessionStarting, setSessionStarting] = useState(false);
 
   // Sync Tabs with URL
   const searchParams = useSearchParams();
@@ -431,6 +435,30 @@ function TeacherDashboardContent() {
 
   const totalStudents = students.length;
 
+  const handleStartFaceAttendance = async () => {
+    if (!selectedSubject) { toast.error("Please select a subject"); return; }
+    setSessionStarting(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    const now = new Date();
+    const expires = new Date(now.getTime() + 10 * 60 * 1000);
+    await supabase.from('attendance_sessions').update({ is_active: false }).eq('teacher_id', session?.user?.id);
+    const { error } = await supabase.from('attendance_sessions').insert({
+      teacher_id: session?.user?.id,
+      subject: selectedSubject,
+      started_at: now.toISOString(),
+      expires_at: expires.toISOString(),
+      is_active: true
+    });
+    setSessionStarting(false);
+    if (!error) {
+      toast.success(`Face attendance started for ${selectedSubject}! Students have 10 minutes.`);
+      setFaceAttendanceOpen(false);
+      setSelectedSubject("");
+    } else {
+      toast.error(error.message);
+    }
+  };
+
   return (
     <div className="space-y-8 max-w-7xl mx-auto px-4">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -439,6 +467,9 @@ function TeacherDashboardContent() {
           <p className="text-muted-foreground mt-1 text-lg">Manage {teacherProfile?.subject ? `your ${teacherProfile.subject}` : 'your'} curriculum, students, and timetable seamlessly.</p>
         </div>
         <div className="flex items-center gap-3">
+          <Button onClick={() => setFaceAttendanceOpen(true)} className="rounded-full shadow-lg shadow-primary/20 bg-green-600 hover:bg-green-700">
+            <UserCheck className="w-4 h-4 mr-2" /> Start Face Attendance
+          </Button>
           <Button variant="outline" onClick={() => setIsMaterialModalOpen(true)} className="border-primary/20 hover:bg-primary/5">
             <Upload className="h-4 w-4 mr-2" /> Upload Material
           </Button>
@@ -1138,6 +1169,36 @@ function TeacherDashboardContent() {
                {isUploading ? "Deploying Assignment..." : "Publish Task"}
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={faceAttendanceOpen} onOpenChange={setFaceAttendanceOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Start Face Attendance</DialogTitle>
+            <DialogDescription>
+              Select subject to start a 10-minute face attendance session for students.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-3">
+            <Label>Select Subject</Label>
+            <select
+              className="w-full border border-border rounded-lg p-2 bg-background text-foreground"
+              value={selectedSubject}
+              onChange={(e) => setSelectedSubject(e.target.value)}
+            >
+              <option value="">-- Select Subject --</option>
+              {teachers.map((t: any) => (
+                <option key={t.id} value={t.subject}>{t.subject}</option>
+              ))}
+            </select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setFaceAttendanceOpen(false)}>Cancel</Button>
+            <Button onClick={handleStartFaceAttendance} disabled={sessionStarting} className="bg-green-600 hover:bg-green-700">
+              {sessionStarting ? "Starting..." : "Start Session"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
